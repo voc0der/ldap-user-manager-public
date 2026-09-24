@@ -29,3 +29,13 @@ updates:
     labels:
       - "dependencies"
       - "php"
+
+  # Monitor npm dev dependencies (ESLint, esbuild)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "javascript"

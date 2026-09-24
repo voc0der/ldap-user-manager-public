@@ -9,10 +9,16 @@ on:
     # Run weekly on Mondays at 12:00 UTC
     - cron: '0 12 * * 1'
 
+permissions:
+  contents: read
+
 jobs:
   semgrep:
     name: Scan Code
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
 
     container:
       image: semgrep/semgrep
@@ -21,13 +27,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
+      # Findings are published to the Security tab (code scanning) rather than
+      # failing the job, so the SARIF upload below always gets to run.
       - name: Run Semgrep
-        run: semgrep scan --config=auto
-        env:
-          SEMGREP_RULES: >-
-            p/security-audit
-            p/php
-            p/javascript
-            p/command-injection
-            p/sql-injection
-            p/xss
+        run: >-
+          semgrep scan
+          --config=auto
+          --config=p/security-audit
+          --config=p/php
+          --config=p/javascript
+          --config=p/command-injection
+          --config=p/sql-injection
+          --config=p/xss
+          --sarif --output=semgrep.sarif
+
+      - name: Upload SARIF to code scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
