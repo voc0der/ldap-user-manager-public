@@ -1,0 +1,15 @@
+.idea
+ldap-user-manager.iml
+
+# Composer dependencies (vendor/ is built in Docker, not committed)
+/vendor/
+
+# Node dependencies (dev-only, not committed)
+/node_modules/
+
+# Linter caches
+.php-cs-fixer.cache
+
+# Python bytecode caches
+__pycache__/
+*.pyc

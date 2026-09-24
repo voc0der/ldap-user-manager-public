@@ -1,0 +1,12 @@
+{
+  "private": true,
+  "scripts": {
+    "lint": "eslint www/js/",
+    "lint:fix": "eslint www/js/ --fix",
+    "minify:css": "esbuild www/css/custom-theme.css --minify --outfile=www/css/custom-theme.min.css"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1",
+    "eslint": "^10.0.0"
+  }
+}

@@ -1,0 +1,33 @@
+name: Semgrep Security Analysis
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run weekly on Mondays at 12:00 UTC
+    - cron: '0 12 * * 1'
+
+jobs:
+  semgrep:
+    name: Scan Code
+    runs-on: ubuntu-latest
+
+    container:
+      image: semgrep/semgrep
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Run Semgrep
+        run: semgrep scan --config=auto
+        env:
+          SEMGREP_RULES: >-
+            p/security-audit
+            p/php
+            p/javascript
+            p/command-injection
+            p/sql-injection
+            p/xss
