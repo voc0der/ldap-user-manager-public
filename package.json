@@ -6,7 +6,7 @@
     "minify:css": "esbuild www/css/custom-theme.css --minify --outfile=www/css/custom-theme.min.css"
   },
   "devDependencies": {
-    "esbuild": "^0.28.1",
+    "esbuild": "^0.28.2",
     "eslint": "^10.0.0"
   }
 }
