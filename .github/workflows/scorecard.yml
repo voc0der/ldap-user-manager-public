@@ -11,11 +11,12 @@ on:
 permissions: read-all
 
 jobs:
+  # Scorecard only publishes results from a job made of approved actions with
+  # no run steps, so filtering happens in the separate upload job below.
   analysis:
     name: Scorecard analysis
     runs-on: ubuntu-latest
     permissions:
-      security-events: write
       id-token: write
     steps:
       - uses: actions/checkout@v7
@@ -33,6 +34,37 @@ jobs:
           name: scorecard-results
           path: results.sarif
           retention-days: 5
+
+  upload:
+    name: Upload to code scanning
+    needs: analysis
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: scorecard-results
+
+      # Actions and base images are referenced by version tag on purpose, not
+      # pinned to SHAs, so drop Scorecard's Pinned-Dependencies findings.
+      - name: Drop Pinned-Dependencies findings
+        shell: python3 {0}
+        run: |
+          import json
+
+          path = 'results.sarif'
+          with open(path) as f:
+              sarif = json.load(f)
+          for run in sarif.get('runs', []):
+              run['results'] = [r for r in run.get('results', []) if r.get('ruleId') != 'PinnedDependenciesID']
+          with open(path, 'w') as f:
+              json.dump(sarif, f)
 
       - uses: github/codeql-action/upload-sarif@v4
         with:

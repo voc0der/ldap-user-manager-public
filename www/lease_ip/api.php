@@ -5,6 +5,7 @@ set_include_path(__DIR__ . '/../includes/');
 include_once 'web_functions.inc.php';
 
 header('Content-Type: application/json');
+header('X-Content-Type-Options: nosniff');
 header('Cache-Control: no-store');
 
 // Ensure logged-in to use
@@ -142,7 +143,7 @@ if ($requestMethod === 'POST') {
   $opKeys = array_values(array_diff($opKeys, ['user'])); // allow user param
   if (count($opKeys) !== 1) {
     http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'Exactly one operation parameter required', 'received' => $opKeys]);
+    echo json_encode(['ok' => false, 'error' => 'Exactly one operation parameter required']);
     exit;
   }
   $key = $opKeys[0];
@@ -159,7 +160,7 @@ if ($requestMethod === 'POST') {
   $opKeys  = array_values(array_diff($getKeys, ['user']));  // allow ?user=
   if (count($opKeys) !== 1) {
     http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'Exactly one parameter required', 'received' => $opKeys]);
+    echo json_encode(['ok' => false, 'error' => 'Exactly one parameter required']);
     exit;
   }
   $key = $opKeys[0];
@@ -175,7 +176,7 @@ if ($requestMethod === 'POST') {
 
 if (!in_array($key, $allowed, true)) {
   http_response_code(400);
-  echo json_encode(['ok' => false, 'error' => 'Unknown operation', 'allowed' => $allowed, 'received' => $key]);
+  echo json_encode(['ok' => false, 'error' => 'Unknown operation', 'allowed' => $allowed]);
   exit;
 }
 
@@ -220,12 +221,13 @@ if ($key === 'geo') {
   if (!is_dir($CACHE_DIR)) {
     @mkdir($CACHE_DIR, 0700, true);
   }
-  $ckey = $CACHE_DIR . '/' . sha1($ip) . '.json';
+  $ckey = $CACHE_DIR . '/' . basename(sha1($ip)) . '.json';
 
   if (is_file($ckey) && (time() - filemtime($ckey) < $TTL_SEC)) {
     $cached = @file_get_contents($ckey);
     $j = json_decode((string)$cached, true);
     if (is_array($j)) {
+      // nosemgrep: php.lang.security.injection.echoed-request.echoed-request
       echo json_encode(['ok' => true,'geo' => $j,'cached' => true]);
       exit;
     }
@@ -418,4 +420,6 @@ if ($ifNone !== '' && trim($ifNone) === $etag) {
 }
 
 header('ETag: ' . $etag);
+// JSON API response (application/json + nosniff).
+// nosemgrep: php.lang.security.injection.echoed-request.echoed-request
 echo json_encode(['ok' => true, 'entries' => $entries]);

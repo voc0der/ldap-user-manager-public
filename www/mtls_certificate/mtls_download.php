@@ -52,7 +52,7 @@ $LOGS     = $DATA . '/logs';
 $STAGE_BASE = getenv('MTLS_STAGE_BASE') ?: '/mtls_stage';
 
 // ---------- Validate token ----------
-$token_hash = hash('sha256', $token);
+$token_hash = basename(hash('sha256', $token));
 $tfile      = $TOKENS . '/' . $token_hash . '.json';
 $ufile      = $tfile . '.used';
 
@@ -69,6 +69,8 @@ if (!$rec) {
   hard_fail(400, 'Token parse error');
 }
 if (($rec['exp'] ?? 0) < time()) {
+  // $tfile is a SHA-256 digest under $TOKENS.
+  // nosemgrep: php.lang.security.unlink-use.unlink-use
   @unlink($tfile);
   hard_fail(410, 'Token expired');
 }

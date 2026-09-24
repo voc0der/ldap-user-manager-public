@@ -350,7 +350,7 @@ if (isset($_POST['create_account'])) {
         $sent_email = send_email($this_mail, "$this_givenname $this_sn", $mail_subject, $mail_body);
         $creation_message = 'The account was created';
         if ($sent_email) {
-          $creation_message .= " and an email sent to $this_mail.";
+          $creation_message .= ' and an email sent to ' . htmlspecialchars($this_mail, ENT_QUOTES, 'UTF-8') . '.';
         } else {
           $creation_message .= " but unfortunately the email wasn't sent.<br>More information will be available in the logs.";
         }
@@ -393,6 +393,8 @@ if (isset($_POST['create_account'])) {
     } else {
       // Log detailed error information server-side only
       ldap_get_option($ldap_connection, LDAP_OPT_DIAGNOSTIC_MESSAGE, $detailed_err);
+      // Log line, not SQL.
+      // nosemgrep: php.lang.security.injection.tainted-sql-string.tainted-sql-string
       error_log("$log_prefix Failed to create account for {$account_identifier}: " . ldap_error($ldap_connection) . ' -- ' . $detailed_err, 0);
       ?>
       <div class="alert alert-danger">

@@ -121,5 +121,7 @@ RUN mkdir -p /etc/ldap && \
 # is set at the container runtime level for better security isolation.
 # Apache will run as the specified non-root user without needing privilege dropping.
 # See docker-compose.yml for the actual user configuration.
+# nosemgrep: dockerfile.security.missing-user-entrypoint.missing-user-entrypoint
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
+# nosemgrep: dockerfile.security.missing-user.missing-user
 CMD ["apache2-foreground"]

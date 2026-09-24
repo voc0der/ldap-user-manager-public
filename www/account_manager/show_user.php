@@ -50,13 +50,14 @@ if (isset($_GET['avatar'])) {
     exit;
   }
 
-  // Detect MIME (fallback to image/jpeg)
+  // Detect MIME (fallback to image/jpeg). Raster formats only: an SVG served
+  // inline from this origin could carry script.
   $mime = 'image/jpeg';
   if (function_exists('finfo_open')) {
     $fi = finfo_open(FILEINFO_MIME_TYPE);
     if ($fi) {
       $det = @finfo_buffer($fi, $photo);
-      if (is_string($det) && strpos($det, 'image/') === 0) {
+      if (in_array($det, ['image/jpeg', 'image/png', 'image/gif', 'image/webp'], true)) {
         $mime = $det;
       }
     }
@@ -72,6 +73,8 @@ if (isset($_GET['avatar'])) {
 
   header('Content-Type: ' . $mime);
   header('Content-Length: ' . strlen($photo));
+  // Raster image bytes with an allowlisted image Content-Type and nosniff.
+  // nosemgrep: php.lang.security.injection.echoed-request.echoed-request
   echo $photo;
   exit;
 }
@@ -742,7 +745,7 @@ document.addEventListener('DOMContentLoaded', function(){
     <div class="panel-heading clearfix">
       <div class="float-start">
         <img class="avatar" alt="Avatar"
-             src="<?php echo $SELF; ?>?avatar=1&account_identifier=<?php echo urlencode($account_identifier); ?>&t=<?php echo (int)$status_ts; ?>"
+             src="<?php echo $SELF; ?>?avatar=1&account_identifier=<?php echo htmlspecialchars(urlencode($account_identifier), ENT_QUOTES, 'UTF-8'); ?>&t=<?php echo (int)$status_ts; ?>"
              onerror="this.style.display='none'">
         <span class="card-title"><h3 style="display:inline-block;vertical-align:middle;margin:0;"><?php print htmlspecialchars($account_identifier, ENT_QUOTES, 'UTF-8'); ?></h3></span>
       </div>
@@ -926,7 +929,7 @@ foreach ($attribute_map as $attribute => $attr_r) {
         <div class="col-sm-3"><strong>WebAuthn</strong></div>
         <div class="col-sm-6">
           <span id="webauthn-badge" class="label <?php echo ($webauthn_count > 0) ? 'label-info' : 'label-default'; ?>">
-            <?php echo (int)$webauthn_count; ?> device<?php echo ($webauthn_count == 1) ? '' : 's'; ?>
+            <?php echo (int)$webauthn_count; /* nosemgrep: php.lang.security.injection.echoed-request.echoed-request */ ?> device<?php echo ($webauthn_count == 1) ? '' : 's'; ?>
           </span>
           <?php if ($webauthn_count > 0 && !$MFA_BLOCKED_FOR_USER) { ?>
             <button id="btn-reset-wa" class="btn btn-ghost btn-xxs"
@@ -999,10 +1002,11 @@ if (!empty($available_roles)) {
             <ul class="list-group" id="member_of_list">
               <?php
                 foreach ($member_of as $group) {
+                  $safe_group = htmlspecialchars((string)$group, ENT_QUOTES, 'UTF-8');
                   if ($group == $LDAP['admins_group'] && $USER_ID == $account_identifier) {
-                    print "<div class='list-group-item' style='opacity: 0.5; pointer-events:none;'>{$group}</div>\n";
+                    print "<div class='list-group-item' style='opacity: 0.5; pointer-events:none;'>{$safe_group}</div>\n";
                   } else {
-                    print "<li class='list-group-item'>$group</li>\n";
+                    print "<li class='list-group-item'>$safe_group</li>\n";
                   }
                 }
 ?>
@@ -1039,7 +1043,7 @@ if (!empty($available_roles)) {
             </div>
             <ul class="list-group">
               <?php foreach ($not_member_of as $group) {
-                print "<li class='list-group-item'>$group</li>\n";
+                print "<li class='list-group-item'>" . htmlspecialchars((string)$group, ENT_QUOTES, 'UTF-8') . "</li>\n";
               } ?>
             </ul>
           </div>

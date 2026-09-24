@@ -9,6 +9,7 @@ require_once 'apprise_helpers.inc.php';
 set_page_access('admin');
 
 header('Content-Type: application/json');
+header('X-Content-Type-Options: nosniff');
 
 // ----- Resolve the mounted authelia dir inside LUM -----
 $AUTHELIA_DIR = getenv('AUTHELIA_DIR')
@@ -102,8 +103,9 @@ if ($action === 'status') {
 }
 
 if ($action === 'result') {
-  // Remove dots from allowed characters to prevent path traversal
-  $id = preg_replace('/[^A-Za-z0-9_:-]/', '', $_GET['id'] ?? '');
+  // Remove dots from allowed characters to prevent path traversal; basename()
+  // keeps it a single path component.
+  $id = basename((string)preg_replace('/[^A-Za-z0-9_:-]/', '', (string)($_GET['id'] ?? '')));
   if (!$id) {
     out(['ok' => false,'error' => 'missing id'], 400);
   }
@@ -222,7 +224,8 @@ if ($action === 'result') {
     @chmod($notifiedPath, 0640);
   }
 
-  // Return original result JSON
+  // Return original result JSON (written by the sidecar; served as JSON + nosniff)
+  // nosemgrep: php.lang.security.injection.echoed-request.echoed-request
   echo $raw;
   exit;
 }
@@ -313,6 +316,8 @@ if (@file_put_contents($tmp, json_encode($payload, JSON_UNESCAPED_SLASHES), LOCK
 
 @chmod($tmp, 0640);
 if (!@rename($tmp, $final)) {
+  // $tmp is built from the server-generated $action_id.
+  // nosemgrep: php.lang.security.unlink-use.unlink-use
   @unlink($tmp);
   out(['ok' => false,'error' => 'rename failed'], 500);
 }

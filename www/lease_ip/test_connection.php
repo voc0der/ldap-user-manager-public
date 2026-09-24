@@ -41,6 +41,8 @@ if (!lum_module_gate_satisfied('lease_ip')) {
 }
 
 /* -------------------- helpers -------------------- */
+// htmlspecialchars() wrapper. Semgrep does not recognise it as a sanitiser, so
+// echo sites below that go through it carry a nosemgrep marker.
 function h(?string $s): string
 {
   return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
@@ -325,10 +327,14 @@ $labels  = explode('.', $hostNow);
 $apex    = (count($labels) >= 3) ? implode('.', array_slice($labels, -3)) : $hostNow;
 $defaultApexBase = $SITE_PROTOCOL . $apex . '/endpoints/lease_ip.php';
 
-$base = (string)($_GET['lease_url'] ?? (getenv('LEASE_API_BASE') ?: $defaultApexBase));
+// Only admins may point the tester at a different lease endpoint; everyone else
+// gets the configured one. validate_safe_url() is best-effort (it does not cover
+// redirects or DNS rebinding), so it must not be the only SSRF barrier.
+$leaseUrlOverride = ($isAdmin && isset($_GET['lease_url'])) ? (string)$_GET['lease_url'] : null;
+$base = $leaseUrlOverride ?? (string)(getenv('LEASE_API_BASE') ?: $defaultApexBase);
 
 // Validate URL to prevent SSRF attacks
-if (isset($_GET['lease_url']) && !validate_safe_url($base)) {
+if ($leaseUrlOverride !== null && !validate_safe_url($base)) {
   http_response_code(400);
   header('Content-Type: application/json; charset=utf-8');
   echo json_encode(['ok' => false, 'error' => 'Invalid or unsafe URL provided'], JSON_UNESCAPED_SLASHES);
@@ -423,6 +429,8 @@ if (isset($_GET['do']) && $_GET['do'] === 'lease') {
   [$ok, $code, $err, $body] = http_request($target, 'GET', null, $headers);
   error_log(sprintf('LUM-ConnTest: lease POST %s http=%d ok=%d', $target, (int)$code, $ok ? 1 : 0));
   header('Content-Type: application/json; charset=utf-8');
+  header('X-Content-Type-Options: nosniff');
+  // nosemgrep: php.lang.security.injection.echoed-request.echoed-request
   echo json_encode([
       'ok'     => $ok,
       'http'   => $code,
@@ -436,6 +444,8 @@ if (isset($_GET['do']) && $_GET['do'] === 'lease') {
 /* -------------------- render -------------------- */
 if ($format === 'json') {
   header('Content-Type: application/json; charset=utf-8');
+  header('X-Content-Type-Options: nosniff');
+  // nosemgrep: php.lang.security.injection.echoed-request.echoed-request
   echo json_encode([
       'ok'        => true,
       'user'      => $username,
@@ -778,7 +788,7 @@ if ($format === 'json') {
           </span>
           <span class="val">
             <?php if ($allNo && $isV4): ?>
-              <a id="leaseBtn" class="btn" href="<?php echo h($selfLeaseUrl); ?>" role="button" aria-label="Lease this IP"><span class="ico" aria-hidden="true">+</span>Lease this IP</a>
+              <a id="leaseBtn" class="btn" href="<?php echo h($selfLeaseUrl); /* nosemgrep: php.lang.security.injection.echoed-request.echoed-request */ ?>" role="button" aria-label="Lease this IP"><span class="ico" aria-hidden="true">+</span>Lease this IP</a>
             <?php endif; ?>
             <span class="<?php echo $isWhitelisted ? 'yes' : 'no'; ?>"><?php echo $isWhitelisted ? '✅' : '❌'; ?></span>
           </span>
@@ -1113,7 +1123,7 @@ if (!$showMenu) {
             </div>
             <div class="meta-row">
               <div class="meta-key">Lease API</div>
-              <div><code class="chip" style="word-break:break-all;"><?php echo h($leaseUrl); ?></code></div>
+              <div><code class="chip" style="word-break:break-all;"><?php echo h($leaseUrl); /* nosemgrep: php.lang.security.injection.echoed-request.echoed-request */ ?></code></div>
             </div>
             <div class="meta-row">
               <div class="meta-key">Ext IPv4</div>
@@ -1128,13 +1138,13 @@ if (!$showMenu) {
           <div class="conn-block-title">Lease Match</div>
           <div class="meta-grid">
             <?php if (!empty($wlMatch['label'])): ?>
-              <div class="meta-row"><div class="meta-key">Label</div><div><span class="chip"><?php echo h((string)$wlMatch['label']); ?></span></div></div>
+              <div class="meta-row"><div class="meta-key">Label</div><div><span class="chip"><?php echo h((string)$wlMatch['label']); /* nosemgrep: php.lang.security.injection.echoed-request.echoed-request */ ?></span></div></div>
             <?php endif; ?>
             <?php if (!empty($wlMatch['source'])): ?>
-              <div class="meta-row"><div class="meta-key">Source</div><div><span class="chip"><?php echo h((string)$wlMatch['source']); ?></span></div></div>
+              <div class="meta-row"><div class="meta-key">Source</div><div><span class="chip"><?php echo h((string)$wlMatch['source']); /* nosemgrep: php.lang.security.injection.echoed-request.echoed-request */ ?></span></div></div>
             <?php endif; ?>
             <?php if (!empty($wlMatch['timestamp'])): ?>
-              <div class="meta-row"><div class="meta-key">Since</div><div><span class="chip"><?php echo h((string)$wlMatch['timestamp']); ?></span></div></div>
+              <div class="meta-row"><div class="meta-key">Since</div><div><span class="chip"><?php echo h((string)$wlMatch['timestamp']); /* nosemgrep: php.lang.security.injection.echoed-request.echoed-request */ ?></span></div></div>
             <?php endif; ?>
             <?php if (array_key_exists('static', $wlMatch) && $wlMatch['static']): ?>
               <div class="meta-row"><div class="meta-key">Static</div><div><span class="chip">true</span></div></div>
@@ -1145,7 +1155,7 @@ if (!$showMenu) {
 
       <?php if ($isAdmin && !$wlOk): ?>
         <div class="warning-note">
-          Lease API lookup unavailable (HTTP <?php echo (int)$wlHttp; ?><?php echo $wlErr ? ', ' . h($wlErr) : ''; ?>).
+          Lease API lookup unavailable (HTTP <?php echo (int)$wlHttp; ?><?php echo $wlErr ? ', ' . h($wlErr) : ''; /* nosemgrep: php.lang.security.injection.echoed-request.echoed-request */ ?>).
           Status is shown without whitelist match details.
         </div>
       <?php endif; ?>

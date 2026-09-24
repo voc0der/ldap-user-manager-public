@@ -59,10 +59,13 @@ if ($ldap_search) {
       $safe_filename = preg_replace('/[^a-zA-Z0-9._-]/', '_', $this_resource . '.' . $this_attribute);
 
       header('Content-Type: application/octet-stream');
+      header('X-Content-Type-Options: nosniff');
       header('Cache-Control: no-cache private');
       header('Content-Transfer-Encoding: Binary');
       header("Content-disposition: attachment; filename=\"{$safe_filename}\"");
       header('Content-Length: ' . strlen($this_record[$this_attribute][0]));
+      // Raw attribute bytes sent as an octet-stream attachment, never rendered.
+      // nosemgrep: php.lang.security.injection.printed-request.printed-request
       print $this_record[$this_attribute][0];
     }
   }

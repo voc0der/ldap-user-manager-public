@@ -143,6 +143,13 @@
   }
 
   /**
+   * Only follow http(s) or site-relative URLs, never javascript: and the like.
+   */
+  function isSafeNavigationUrl(url) {
+    return typeof url === 'string' && /^(https?:\/\/|\/)/i.test(url);
+  }
+
+  /**
    * Ensure logout modal exists in DOM
    */
   function ensureLogoutModal() {
@@ -182,7 +189,7 @@
 
       if (action === 'logout-local') {
         const localUrl = modal.getAttribute('data-local-url');
-        if (localUrl) {
+        if (isSafeNavigationUrl(localUrl)) {
           window.location.assign(localUrl);
         }
         return;
@@ -190,7 +197,7 @@
 
       if (action === 'logout-global') {
         const globalUrl = modal.getAttribute('data-global-url');
-        if (globalUrl) {
+        if (isSafeNavigationUrl(globalUrl)) {
           window.location.assign(globalUrl);
         }
       }

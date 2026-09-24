@@ -37,7 +37,7 @@ function apprise_client_ip(): string
   return '';
 }
 
-// Fire-and-forget multipart POST (using proc_open for security)
+// Best-effort multipart POST to Apprise; failures are ignored.
 function apprise_notify(string $body, ?string $tag = null): void
 {
   $url = getenv('APPRISE_URL');
@@ -46,27 +46,20 @@ function apprise_notify(string $body, ?string $tag = null): void
   }
   $tag = $tag ?: (getenv('APPRISE_TAG') ?: 'all');
 
-  // Use proc_open with explicit argument array to prevent command injection
-  $descriptors = [
-    0 => ['pipe', 'r'],  // stdin
-    1 => ['file', '/dev/null', 'w'],  // stdout
-    2 => ['file', '/dev/null', 'w'],   // stderr
-  ];
-
-  $args = [
-    'curl',
-    '-s',
-    '-X', 'POST',
-    '-F', 'body=' . $body,
-    '-F', 'tag=' . $tag,
-    $url,
-  ];
-
-  $process = @proc_open($args, $descriptors, $pipes);
-  if (is_resource($process)) {
-    // Don't wait for process to complete (fire-and-forget)
-    @proc_close($process);
+  // PHP's curl extension rather than the curl CLI: no subprocess, and form
+  // values are never interpreted as '@file' uploads.
+  $ch = curl_init($url);
+  if ($ch === false) {
+    return;
   }
+  curl_setopt_array($ch, [
+    CURLOPT_POST           => true,
+    CURLOPT_POSTFIELDS     => ['body' => $body, 'tag' => $tag],
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_CONNECTTIMEOUT => 3,
+    CURLOPT_TIMEOUT        => 5,
+  ]);
+  @curl_exec($ch);
 }
 
 // Convenience wrapper for “User Deleted” events

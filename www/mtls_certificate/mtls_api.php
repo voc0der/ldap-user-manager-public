@@ -414,11 +414,14 @@ if ($action === 'verify_code') {
   if (!is_array($rec)) {
     json_fail('Code record parse error', 400);
   }
+  // $fname is a SHA-256 digest of uid|session_id under $CODES.
   if ((isset($rec['exp']) ? $rec['exp'] : 0) < time()) {
+    // nosemgrep: php.lang.security.unlink-use.unlink-use
     @unlink($fname);
     json_fail('Code expired', 400);
   }
   if ((isset($rec['attempts']) ? $rec['attempts'] : 0) >= 5) {
+    // nosemgrep: php.lang.security.unlink-use.unlink-use
     @unlink($fname);
     json_fail('Too many attempts', 429);
   }
@@ -431,6 +434,7 @@ if ($action === 'verify_code') {
   }
 
   // Code is valid → remove challenge and mint a single-use token
+  // nosemgrep: php.lang.security.unlink-use.unlink-use
   @unlink($fname);
 
   // Get location from session (default to external)

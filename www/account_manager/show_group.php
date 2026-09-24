@@ -341,10 +341,11 @@ ldap_close($ldap_connection);
                 <ul class="list-group" id="membership_list">
                   <?php
                   foreach ($group_members as $member) {
+                    $safe_member = htmlspecialchars((string)$member, ENT_QUOTES, 'UTF-8');
                     if ($group_cn == $LDAP['admins_group'] and $member == $USER_ID) {
-                      print "<div class='list-group-item' style='opacity: 0.5; pointer-events:none;'>$member</div>\n";
+                      print "<div class='list-group-item' style='opacity: 0.5; pointer-events:none;'>$safe_member</div>\n";
                     } else {
-                      print "<li class='list-group-item'>$member</li>\n";
+                      print "<li class='list-group-item'>$safe_member</li>\n";
                     }
                   }
 ?>
@@ -383,7 +384,7 @@ ldap_close($ldap_connection);
                 </div>
                 <ul class="list-group">
                   <?php foreach ($non_members as $nonmember) {
-                    print "<li class='list-group-item'>$nonmember</li>\n";
+                    print "<li class='list-group-item'>" . htmlspecialchars((string)$nonmember, ENT_QUOTES, 'UTF-8') . "</li>\n";
                   } ?>
                 </ul>
               </div>

@@ -29,6 +29,7 @@ jobs:
 
       # Findings are published to the Security tab (code scanning) rather than
       # failing the job, so the SARIF upload below always gets to run.
+      # Actions are referenced by version tag on purpose, not pinned to SHAs.
       - name: Run Semgrep
         run: >-
           semgrep scan
@@ -39,7 +40,24 @@ jobs:
           --config=p/command-injection
           --config=p/sql-injection
           --config=p/xss
+          --exclude-rule=yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
           --sarif --output=semgrep.sarif
+
+      # Semgrep keeps nosemgrep-suppressed findings in its SARIF (marked as
+      # suppressed), but code scanning still opens alerts for them.
+      - name: Drop suppressed findings from SARIF
+        if: always()
+        shell: python3 {0}
+        run: |
+          import json
+
+          path = 'semgrep.sarif'
+          with open(path) as f:
+              sarif = json.load(f)
+          for run in sarif.get('runs', []):
+              run['results'] = [r for r in run.get('results', []) if not r.get('suppressions')]
+          with open(path, 'w') as f:
+              json.dump(sarif, f)
 
       - name: Upload SARIF to code scanning
         if: always()

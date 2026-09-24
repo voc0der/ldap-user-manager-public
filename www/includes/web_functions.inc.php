@@ -714,7 +714,7 @@ function validate_passkey_cookie()
 
     // Use dedicated session directory instead of /tmp for security
     $session_dir = getenv('SESSION_DIR') ?: (dirname(__DIR__) . '/data/sessions');
-    $filename = hash('sha256', $user_id);
+    $filename = basename(hash('sha256', $user_id));
     $session_path = $session_dir . '/' . $filename;
 
     $session_file = @ file_get_contents($session_path);
@@ -1067,7 +1067,9 @@ function log_out($method = 'normal')
 
   // Use dedicated session directory and consistent hashing
   $session_dir = getenv('SESSION_DIR') ?: (dirname(__DIR__) . '/data/sessions');
-  $filename = hash('sha256', $USER_ID);
+  $filename = basename(hash('sha256', $USER_ID));
+  // Session file name is a SHA-256 hex digest.
+  // nosemgrep: php.lang.security.unlink-use.unlink-use
   @ unlink($session_dir . '/' . $filename);
 
   $method = strtolower(trim((string)$method));
