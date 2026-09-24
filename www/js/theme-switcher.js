@@ -143,10 +143,13 @@
   }
 
   /**
-   * Only follow http(s) or site-relative URLs, never javascript: and the like.
+   * Navigate only to a site-relative path (the server builds both logout URLs
+   * from SERVER_PATH), never to javascript: URLs or other origins.
    */
-  function isSafeNavigationUrl(url) {
-    return typeof url === 'string' && /^(https?:\/\/|\/)/i.test(url);
+  function navigateSiteRelative(url) {
+    if (typeof url === 'string' && url.startsWith('/') && !url.startsWith('//')) {
+      window.location.assign(url);
+    }
   }
 
   /**
@@ -188,18 +191,12 @@
       }
 
       if (action === 'logout-local') {
-        const localUrl = modal.getAttribute('data-local-url');
-        if (isSafeNavigationUrl(localUrl)) {
-          window.location.assign(localUrl);
-        }
+        navigateSiteRelative(modal.getAttribute('data-local-url'));
         return;
       }
 
       if (action === 'logout-global') {
-        const globalUrl = modal.getAttribute('data-global-url');
-        if (isSafeNavigationUrl(globalUrl)) {
-          window.location.assign(globalUrl);
-        }
+        navigateSiteRelative(modal.getAttribute('data-global-url'));
       }
     });
 
