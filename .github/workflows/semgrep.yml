@@ -41,6 +41,22 @@ jobs:
           --config=p/xss
           --sarif --output=semgrep.sarif
 
+      # Semgrep keeps nosemgrep-suppressed findings in its SARIF (marked as
+      # suppressed), but code scanning still opens alerts for them.
+      - name: Drop suppressed findings from SARIF
+        if: always()
+        shell: python3 {0}
+        run: |
+          import json
+
+          path = 'semgrep.sarif'
+          with open(path) as f:
+              sarif = json.load(f)
+          for run in sarif.get('runs', []):
+              run['results'] = [r for r in run.get('results', []) if not r.get('suppressions')]
+          with open(path, 'w') as f:
+              json.dump(sarif, f)
+
       - name: Upload SARIF to code scanning
         if: always()
         uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
