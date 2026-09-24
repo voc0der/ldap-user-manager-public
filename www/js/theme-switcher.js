@@ -13,6 +13,10 @@
   const basePath = scriptPath.substring(0, scriptPath.lastIndexOf('/js/'));
 
   const THEME_API = basePath + '/api/theme.php';
+  // Built here rather than read from the page, so navigation never follows a
+  // URL taken from DOM text.
+  const LOGOUT_URL_LOCAL = basePath + '/log_out/?scope=local';
+  const LOGOUT_URL_GLOBAL = basePath + '/log_out/?scope=global';
   const DEFAULT_THEME = 'green-cyberpunk';
 
   let currentTheme = DEFAULT_THEME;
@@ -131,22 +135,10 @@
   }
 
   /**
-   * Resolve local/global logout URLs from dropdown data attributes
+   * Whether the server offers a global (identity provider) logout
    */
-  function resolveLogoutUrls() {
-    const localUrl = dropdownElement.getAttribute('data-local-logout-url') ||
-      dropdownElement.getAttribute('data-logout-url') || '';
-    const globalUrl = dropdownElement.getAttribute('data-global-logout-url') || '';
-    const hasGlobal = dropdownElement.getAttribute('data-has-global-logout') === '1' && globalUrl !== '';
-
-    return { localUrl, globalUrl, hasGlobal };
-  }
-
-  /**
-   * Only follow http(s) or site-relative URLs, never javascript: and the like.
-   */
-  function isSafeNavigationUrl(url) {
-    return typeof url === 'string' && /^(https?:\/\/|\/)/i.test(url);
+  function hasGlobalLogout() {
+    return dropdownElement.getAttribute('data-has-global-logout') === '1';
   }
 
   /**
@@ -188,18 +180,12 @@
       }
 
       if (action === 'logout-local') {
-        const localUrl = modal.getAttribute('data-local-url');
-        if (isSafeNavigationUrl(localUrl)) {
-          window.location.assign(localUrl);
-        }
+        window.location.assign(LOGOUT_URL_LOCAL);
         return;
       }
 
-      if (action === 'logout-global') {
-        const globalUrl = modal.getAttribute('data-global-url');
-        if (isSafeNavigationUrl(globalUrl)) {
-          window.location.assign(globalUrl);
-        }
+      if (action === 'logout-global' && hasGlobalLogout()) {
+        window.location.assign(LOGOUT_URL_GLOBAL);
       }
     });
 
@@ -213,20 +199,10 @@
    */
   function openLogoutModal() {
     const modal = ensureLogoutModal();
-    const urls = resolveLogoutUrls();
     const localButton = modal.querySelector('[data-action="logout-local"]');
     const globalButton = modal.querySelector('[data-action="logout-global"]');
 
-    modal.setAttribute('data-local-url', urls.localUrl);
-    modal.setAttribute('data-global-url', urls.hasGlobal ? urls.globalUrl : '');
-
-    if (urls.localUrl === '') {
-      localButton.setAttribute('disabled', 'disabled');
-    } else {
-      localButton.removeAttribute('disabled');
-    }
-
-    if (!urls.hasGlobal) {
+    if (!hasGlobalLogout()) {
       globalButton.setAttribute('disabled', 'disabled');
       globalButton.textContent = 'Everything (Unavailable)';
     } else {
@@ -239,14 +215,7 @@
     modal.setAttribute('aria-hidden', 'false');
     document.body.classList.add('lum-logout-open');
     window.setTimeout(function() {
-      if (urls.localUrl !== '') {
-        localButton.focus();
-      } else {
-        const cancelButton = modal.querySelector('[data-action="cancel"]');
-        if (cancelButton) {
-          cancelButton.focus();
-        }
-      }
+      localButton.focus();
     }, 0);
   }
 
