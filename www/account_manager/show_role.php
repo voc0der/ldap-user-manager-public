@@ -208,7 +208,7 @@ ldap_close($ldap_connection);
           <label for="role_priority" class="col-sm-3 control-label"><strong>Priority</strong><sup>&ast;</sup></label>
           <div class="col-sm-6">
             <input type="number" class="form-control" id="role_priority" name="role_priority"
-                   value="<?php echo (int)$role_priority; ?>"
+                   value="<?php echo (int)$role_priority; /* nosemgrep: php.lang.security.injection.echoed-request.echoed-request */ ?>"
                    min="1" max="999" required>
             <div class="help-min">Lower number = higher priority. Users matching multiple roles will show the highest priority role.</div>
           </div>

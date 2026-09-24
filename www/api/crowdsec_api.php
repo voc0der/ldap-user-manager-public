@@ -63,7 +63,9 @@ function write_json_atomic(string $path, array $data, int $mode = 0640): bool
     return false;
   }
 
+  // $tmp is derived from $path, which callers pass as a fixed server-side path.
   if (@file_put_contents($tmp, $json . "\n", LOCK_EX) === false) {
+    // nosemgrep: php.lang.security.unlink-use.unlink-use
     @unlink($tmp);
     return false;
   }
@@ -71,6 +73,7 @@ function write_json_atomic(string $path, array $data, int $mode = 0640): bool
   @chmod($tmp, $mode);
 
   if (!@rename($tmp, $path)) {
+    // nosemgrep: php.lang.security.unlink-use.unlink-use
     @unlink($tmp);
     return false;
   }
@@ -300,6 +303,8 @@ if (@file_put_contents($tmp, $payload, LOCK_EX) === false) {
 }
 @chmod($tmp, 0640);
 if (!@rename($tmp, $final)) {
+  // $tmp is built from the server-generated $action_id.
+  // nosemgrep: php.lang.security.unlink-use.unlink-use
   @unlink($tmp);
   out(['ok' => false, 'error' => 'failed to queue action'], 500);
 }
@@ -323,8 +328,10 @@ while (microtime(true) < $deadline) {
   }
 }
 
-// Clean up regardless
+// Clean up regardless (both paths are built from the server-generated $action_id)
+// nosemgrep: php.lang.security.unlink-use.unlink-use
 @unlink($rfile);
+// nosemgrep: php.lang.security.unlink-use.unlink-use
 @unlink($final); // in case stager never picked it up
 
 if (!is_array($result)) {

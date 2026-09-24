@@ -40,12 +40,13 @@ if (!$photo) {
   exit;
 }
 
+// Raster formats only: an SVG served inline from this origin could carry script.
 $mime = 'image/jpeg';
 if (function_exists('finfo_open')) {
   $finfo = finfo_open(FILEINFO_MIME_TYPE);
   if ($finfo) {
     $detected = @finfo_buffer($finfo, $photo);
-    if (is_string($detected) && strpos($detected, 'image/') === 0) {
+    if (in_array($detected, ['image/jpeg', 'image/png', 'image/gif', 'image/webp'], true)) {
       $mime = $detected;
     }
     @finfo_close($finfo);

@@ -91,8 +91,8 @@ render_header('mTLS Certificate');
         <h5><?= htmlspecialchars($preset['title'], ENT_QUOTES, 'UTF-8') ?></h5>
         <ol style="padding-left:1.25rem; margin-bottom:10px">
           <li>Send yourself a code below, enter it, and download the file.</li>
-          <?php foreach ($preset['steps'] as $step): ?>
-          <li><?= $step ?></li>
+          <?php foreach ($preset['steps'] as $step): /* static markup from the table above */ ?>
+          <li><?php echo $step; /* nosemgrep: php.lang.security.injection.echoed-request.echoed-request */ ?></li>
           <?php endforeach; ?>
         </ol>
         <a href="./" class="help-min">Choose a different download</a>
@@ -165,13 +165,14 @@ render_header('mTLS Certificate');
   
 </div>
 
+<?php /* Values below come from fixed allowlists or the session, not raw input. */ ?>
 <script>
 (function(){
   const csrf = <?= json_encode($_SESSION['csrf']) ?>;
   const canChooseLocation = <?= json_encode($can_choose_location) ?>;
   let selectedLocation = <?= json_encode($_SESSION['mtls_location']) ?>;
-  let selectedExportType = <?= json_encode($sel_export_type) ?>;
-  const autoContinue = <?= json_encode($preset_export_type !== null) ?>;
+  let selectedExportType = <?php echo json_encode($sel_export_type); /* nosemgrep: php.lang.security.injection.echoed-request.echoed-request */ ?>;
+  const autoContinue = <?php echo json_encode($preset_export_type !== null); /* nosemgrep: php.lang.security.injection.echoed-request.echoed-request */ ?>;
 
   // UX constants
   // The external stager may need to fetch certificate material (notably for

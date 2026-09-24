@@ -9,6 +9,7 @@ require_once 'apprise_helpers.inc.php';
 set_page_access('admin');
 
 header('Content-Type: application/json');
+header('X-Content-Type-Options: nosniff');
 
 $CROWDSEC_DIR = getenv('CROWDSEC_DIR')
   ?: (realpath(__DIR__ . '/../data/crowdsec') ?: (__DIR__ . '/../data/crowdsec'));
@@ -192,7 +193,7 @@ if ($action === 'edgebans') {
 }
 
 if ($action === 'result') {
-  $id = preg_replace('/[^A-Za-z0-9_:-]/', '', $_GET['id'] ?? '');
+  $id = basename((string)preg_replace('/[^A-Za-z0-9_:-]/', '', (string)($_GET['id'] ?? '')));
   if (!$id) {
     out(['ok' => false, 'error' => 'missing id'], 400);
   }
@@ -240,10 +241,13 @@ if ($action === 'result') {
 
   if ($ok && $op === 'decisions.list' && isset($j['data']) && is_array($j['data'])) {
     $j['potential_false_positives'] = crowdsec_build_potential_false_positive_map($j['data']);
+    // nosemgrep: php.lang.security.injection.echoed-request.echoed-request
     echo json_encode($j, JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
     exit;
   }
 
+  // Result JSON written by the sidecar; served as JSON + nosniff.
+  // nosemgrep: php.lang.security.injection.echoed-request.echoed-request
   echo $raw;
   exit;
 }
@@ -322,6 +326,8 @@ if ($op === 'edgeban.remove') {
   }
   @chmod($tmp, 0640);
   if (!@rename($tmp, $edgePath)) {
+    // $tmp is a fixed path next to edgebans.json.
+    // nosemgrep: php.lang.security.unlink-use.unlink-use
     @unlink($tmp);
     out(['ok' => false, 'error' => 'rename failed'], 500);
   }
@@ -379,6 +385,8 @@ if (@file_put_contents($tmp, json_encode($payload, JSON_UNESCAPED_SLASHES), LOCK
 }
 @chmod($tmp, 0640);
 if (!@rename($tmp, $final)) {
+  // $tmp is built from the server-generated $action_id.
+  // nosemgrep: php.lang.security.unlink-use.unlink-use
   @unlink($tmp);
   out(['ok' => false, 'error' => 'rename failed'], 500);
 }

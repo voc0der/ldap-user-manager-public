@@ -220,11 +220,16 @@ if (!function_exists('messages_decrypt_payload')) {
     if ($alg === 'aes-256-gcm') {
       $iv = base64_decode((string)($sealed['iv'] ?? ''), true);
       $tag = base64_decode((string)($sealed['tag'] ?? ''), true);
-      if (!is_string($iv) || !is_string($tag)) {
+      // Match what messages_encrypt_payload() writes (12-byte IV, 16-byte tag);
+      // a truncated GCM tag would weaken authentication.
+      if (!is_string($iv) || strlen($iv) !== 12 || !is_string($tag) || strlen($tag) !== 16) {
         return null;
       }
       $plain = openssl_decrypt($cipher, 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $iv, $tag);
-      return is_string($plain) ? $plain : null;
+      if ($plain === false) {
+        return null;
+      }
+      return $plain;
     }
 
     return null;
@@ -510,6 +515,8 @@ if (!function_exists('messages_save_store_to_disk')) {
     @chmod($tmp, 0640);
 
     if (!@rename($tmp, $path)) {
+      // $tmp is a fixed path next to the message store.
+      // nosemgrep: php.lang.security.unlink-use.unlink-use
       @unlink($tmp);
       return ['ok' => false, 'error' => 'Failed replacing encrypted message store.'];
     }
