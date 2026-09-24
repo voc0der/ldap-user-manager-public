@@ -1584,10 +1584,7 @@ function render_menu()
 
   $nav_items = lum_build_navigation_items();
   $current_label = lum_current_navigation_label();
-  $local_logout_url = $SERVER_PATH . 'log_out/?scope=local';
-  $global_logout_target = lum_global_logout_url();
-  $global_logout_url = ($global_logout_target === '') ? '' : ($SERVER_PATH . 'log_out/?scope=global');
-  $has_global_logout = ($global_logout_url !== '');
+  $has_global_logout = (lum_global_logout_url() !== '');
   $messages_url = $SERVER_PATH . 'messages/';
   $messages_unread = (!empty($USER_ID)) ? lum_messages_unread_count((string)$USER_ID) : 0;
   $messages_unread_label = ($messages_unread > 99) ? '99+' : (string)$messages_unread;
@@ -1651,9 +1648,6 @@ function render_menu()
               <li class="navbar-text user-tag">
                 <div class="theme-dropdown"
                      id="theme-dropdown"
-                     data-logout-url="<?php echo htmlspecialchars($local_logout_url, ENT_QUOTES, 'UTF-8'); ?>"
-                     data-local-logout-url="<?php echo htmlspecialchars($local_logout_url, ENT_QUOTES, 'UTF-8'); ?>"
-                     data-global-logout-url="<?php echo htmlspecialchars($global_logout_url, ENT_QUOTES, 'UTF-8'); ?>"
                      data-has-global-logout="<?php echo $has_global_logout ? '1' : '0'; ?>">
                   <span class="username username--glitch"
                         data-u="<?php echo htmlspecialchars($USER_ID, ENT_QUOTES, 'UTF-8'); ?>">
