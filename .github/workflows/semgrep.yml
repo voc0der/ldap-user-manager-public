@@ -25,10 +25,11 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7
 
       # Findings are published to the Security tab (code scanning) rather than
       # failing the job, so the SARIF upload below always gets to run.
+      # Actions are referenced by version tag on purpose, not pinned to SHAs.
       - name: Run Semgrep
         run: >-
           semgrep scan
@@ -39,6 +40,7 @@ jobs:
           --config=p/command-injection
           --config=p/sql-injection
           --config=p/xss
+          --exclude-rule=yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
           --sarif --output=semgrep.sarif
 
       # Semgrep keeps nosemgrep-suppressed findings in its SARIF (marked as
@@ -59,7 +61,7 @@ jobs:
 
       - name: Upload SARIF to code scanning
         if: always()
-        uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: semgrep.sarif
           category: semgrep

@@ -1,4 +1,4 @@
-FROM php:8-apache@sha256:e7c4a78bc342384903c942f50329636cf9c9d0b1b51860065f443c048f260c43
+FROM php:8-apache
 
 # Apply security patches, build the PHP extensions, then remove the build-only
 # packages (-dev headers plus the base image's compiler toolchain,
@@ -39,7 +39,7 @@ RUN set -eux; \
     rm -rf /var/lib/apt/lists/*
 
 # Install Composer
-COPY --from=composer:2@sha256:a5f59b9fd2faf31218632be4809dc6491761085e8064c31dc3b84378c48c248b /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Enable Apache modules
 RUN a2enmod rewrite ssl && a2dissite 000-default default-ssl
